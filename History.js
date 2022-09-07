@@ -7,7 +7,7 @@ exports = module.exports = class {
     updateRecord(grade) {
         this.record += grade
     }
-    remoteRequest() {
+    async remoteRequest() {
         return await mockRequest()
     }
 }
