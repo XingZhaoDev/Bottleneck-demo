@@ -1,28 +1,44 @@
 const Bottleneck = require('bottleneck')
 const History = require('./History')
+const Limiter = require('./Limiter')
+const mainefest = require('./manifest')
+
+const { getRateLimiter } = require('./limit2')
 
 const limiter = new Bottleneck({
+    maxConcurrent: 10,
     minTime: 333
 });
 
+const l2 = new Limiter(5)
+l2.startLimiter()
+
+
+const l3 = getRateLimiter(mainefest.routerConfigs.asset360.bucket)
+
 const history = new History(100)
 
-const doJob = async () => {
+const mockUrl =  "https://mocki.io/v1/27bcd762-1dfa-4eaa-89bb-401bad2cf1c5" 
+const doJob = async (index) => {
     try {
-        const response = await history.remoteRequest()
-        console.log('api response Without req limit: ', response.body)
+        const response = await history.remoteRequest(mockUrl)
+        console.log(`api  without limit ${index} response With req limit:${response.body} `)
     } catch (error) {
         console.log(error)
     }
 }
+const request = history.remoteRequest(mockUrl)
 
-const doJobWithLimit = async () => {
+const doJobWithLimit = async (index) => {
     try {
-        const response = await limiter.schedule(history.remoteRequest);
-        console.log('api response With req limit: ', response.body)
+        const response = await l3.schedule( () => history.remoteRequest(mockUrl));
+        console.log(`api ${index} response With req limit:${response.body} `)
     } catch (error) {
         console.log('request error is here ===> : ', error)
     }
 }
-doJobWithLimit()
-doJob()
+
+for (let i = 0; i < 10; i++) {
+    console.log(`hit request ${i}`)
+    doJobWithLimit(i)
+}
